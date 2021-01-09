@@ -3,6 +3,20 @@ import os
 import sys
 
 
+FPS = 50
+WIDTH = 400
+HEIGHT = 300
+STEP = 16
+
+
+pygame.init()
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+clock = pygame.time.Clock()
+
+all_sprites = pygame.sprite.Group()
+tiles_group = pygame.sprite.Group()
+
+
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
     if not os.path.isfile(fullname):
@@ -17,3 +31,5 @@ def load_image(name, colorkey=None):
     else:
         image = image.convert_alpha()
     return image
+
+
