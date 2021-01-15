@@ -1,18 +1,20 @@
 import pygame
 import os
 import sys
+import random
 
 
 FPS = 50
-WIDTH = 400
-HEIGHT = 300
-STEP = 16
+WIDTH = 395
+HEIGHT = 395
+STEP = 18
 
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 clock = pygame.time.Clock()
 
+player = None
 all_sprites = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
 
@@ -33,3 +35,72 @@ def load_image(name, colorkey=None):
     return image
 
 
+def load_level(filename):
+    filename = "data/" + filename
+    # читаем уровень, убирая символы перевода строки
+    with open(filename, 'r') as mapFile:
+        level_map = [line.strip() for line in mapFile]
+
+    # и подсчитываем максимальную длину
+    max_width = max(map(len, level_map))
+
+    # дополняем каждую строку пустыми клетками ('.')
+    return list(map(lambda x: x.ljust(max_width, '.'), level_map))
+
+
+def generate_level(level):
+    new_player, x, y = None, None, None
+    for y in range(len(level)):
+        for x in range(len(level[y])):
+            if level[y][x] == '.':
+                Tile('empty', x, y)
+            elif level[y][x] == '#':
+                Tile('wall', x, y)
+    return x, y
+
+
+tile_images = {
+    'wall': load_image('wall.png'),
+    'empty': load_image('grass.png')
+}
+
+tile_width = tile_height = 18
+
+
+class Tile(pygame.sprite.Sprite):
+    def __init__(self, tile_type, pos_x, pos_y):
+        super().__init__(tiles_group, all_sprites)
+        self.image = tile_images[tile_type]
+        self.rect = self.image.get_rect().move(
+            tile_width * pos_x, tile_height * pos_y)
+
+
+pygame.display.set_caption('Змейка')
+running = True
+level_x, level_y = generate_level(load_level('map.txt'))
+
+
+
+
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_LEFT:
+                x1_change = -STEP
+                y1_change = 0
+            elif event.key == pygame.K_RIGHT:
+                x1_change = STEP
+                y1_change = 0
+            elif event.key == pygame.K_UP:
+                x1_change = 0
+                y1_change = -STEP
+            elif event.key == pygame.K_DOWN:
+                x1_change = 0
+                y1_change = STEP
+    screen.fill(pygame.Color(0, 130, 0))
+    tiles_group.draw(screen)
+    pygame.display.flip()
+    clock.tick(FPS)
+pygame.quit()
