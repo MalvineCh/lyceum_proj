@@ -4,10 +4,10 @@ import sys
 import random
 
 
-FPS = 10
-WIDTH = 256
-HEIGHT = 288
-STEP = 16
+FPS = 7
+WIDTH = 736
+HEIGHT = 544
+STEP = 32
 
 
 pygame.init()
@@ -64,7 +64,7 @@ tile_images = {
     'empty': load_image('grass.png')
 }
 
-tile_width = tile_height = 18
+tile_width = tile_height = STEP
 
 
 class Tile(pygame.sprite.Sprite):
@@ -78,22 +78,28 @@ class Tile(pygame.sprite.Sprite):
 pygame.display.set_caption('Змейка')
 running = True
 level_x, level_y = generate_level(load_level('map.txt'))
+flag = True
+while flag:
+    sx = random.randrange(0, WIDTH - STEP, STEP)
+    sy = random.randrange(0, HEIGHT - STEP, STEP)
+    apple_x = random.randrange(0, WIDTH, STEP)
+    apple_y = random.randrange(0, HEIGHT, STEP)
+    if sx != apple_x and sy != apple_y:
+        flag = False
 
-
-sx = random.randrange(0, WIDTH, STEP)
-sy = random.randrange(20, HEIGHT, STEP)
-apple_x = random.randrange(0, WIDTH, STEP)
-apple_y = random.randrange(20, HEIGHT, STEP)
 rand_num = random.randint(0, 30)
 apple_sprite = pygame.sprite.Sprite()
-snake = [(sx,sy)]
+snake = [(sx,sy), (sx + STEP, sy + STEP)]
+snake_len = 2
+x_change = 0
+y_change = 0
 
-if rand_num in [0, 7, 17, 21, 23]:
-    apple_sprite.image = load_image('apple.png')
-else:
-    apple_sprite.image = load_image('green_apple.png')
+apple_sprite.image = load_image('apple.png')
 
 apple_sprite.rect = apple_sprite.image.get_rect()
+apple_pos = (apple_x, apple_y)
+apple_sprite.rect.x = apple_x
+apple_sprite.rect.y = apple_y
 all_sprites.add(apple_sprite)
 
 while running:
@@ -101,31 +107,30 @@ while running:
         if event.type == pygame.QUIT:
             running = False
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_LEFT:
-                x1_change = -STEP
-                y1_change = 0
-            elif event.key == pygame.K_RIGHT:
-                x1_change = STEP
-                y1_change = 0
-            elif event.key == pygame.K_UP:
-                x1_change = 0
-                y1_change = -STEP
-            elif event.key == pygame.K_DOWN:
-                x1_change = 0
-                y1_change = STEP
+            if event.key == pygame.K_LEFT and x_change != STEP:
+                x_change = -STEP
+                y_change = 0
+            elif event.key == pygame.K_RIGHT and x_change != -STEP:
+                x_change = STEP
+                y_change = 0
+            elif event.key == pygame.K_UP and y_change != STEP:
+                x_change = 0
+                y_change = -STEP
+            elif event.key == pygame.K_DOWN and y_change != -STEP:
+                x_change = 0
+                y_change = STEP
+    if snake[-1] == apple_pos:
+        apple_pos = random.randrange(0, WIDTH, STEP), random.randrange(0, HEIGHT, STEP)
+        apple_sprite.rect.x, apple_sprite.rect.y = apple_pos
 
-    sx += x1_change
-    sy += y1_change
+    sx += x_change
+    sy += y_change
     snake.append([sx,sy])
-    snake = snake[-STEP:]
-
-    screen.fill(pygame.Color(0, 130, 0))
-    for i in range(len(snake)):
-        for j in range(20, len(snake[i])):
-            pygame.draw.rect(screen, pygame.Color('red'), [i, j, WIDTH, HEIGHT])
+    snake = snake[-snake_len:]
     tiles_group.draw(screen)
-    apple_sprite.rect.x = apple_x
-    apple_sprite.rect.y = apple_y
+    all_sprites.draw(screen)
+    for i, j in snake:
+        (pygame.draw.rect(screen, pygame.Color('red'), (i, j, STEP, STEP)))
     pygame.display.flip()
     clock.tick(FPS)
 pygame.quit()
