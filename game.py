@@ -94,10 +94,6 @@ class Tile(pygame.sprite.Sprite):
             tile_width * pos_x, tile_height * pos_y)
 
 
-class Snake(pygame.sprite.Group):
-    def __init
-
-
 pygame.display.set_caption('Змейка')
 running = True
 level_x, level_y = generate_level(load_level('map.txt'))
@@ -115,7 +111,7 @@ while flag:
 # также осуществляется проверка на различное положение змейки и яблока.
 
 snake = [(sx,sy)]
-snake.append((sx + STEP, sy + STEP))
+snake.append((sx + STEP, sy))
 snake_len = 2
 x_change = 0
 y_change = 0
@@ -150,7 +146,6 @@ while running:
                 x_change = 0
                 y_change = STEP
     # управление змейкой. также добавляем проверку, чтобы змейка не могла повернуть в противоположное направление
-
     if snake[-1] == apple_pos:
         all_sprites.remove(apple_sprite)
         flag = True
@@ -161,8 +156,8 @@ while running:
                     break
             flag = False
         apple_sprite.rect.x, apple_sprite.rect.y = apple_pos
-        fortune = random.randint(0, 30)
-        if fortune in (5, 13, 17, 23, 28):
+        fortune = random.randint(0, 28)
+        if fortune in (1, 5, 9, 13, 17, 23, 28):
             apple_sprite.image = load_image('gold_apple.png')
             snake_len += 2
             FPS += 4
@@ -173,13 +168,17 @@ while running:
             snake_len += 1
         all_sprites.add(apple_sprite)
     # поедание змейкой яблока. также добавлено дополнительное(золотое) яблоко, которое выпадает игроку рандомно
-    if (snake[0][0] < 0) or (snake[0][1] < 64) or (snake[0][0] > WIDTH - 32) or (snake[0][1] > HEIGHT - 32):
-        running = False
     sx += x_change
     sy += y_change
-    snake.append([sx,sy])
+    snake.append((sx, sy))
     snake = snake[-snake_len:]
     # увеличиваем змейку
+
+    if snake_len != len(set(snake)) and snake_len != 2:
+        running = False
+    if (snake[0][0] < 0) or (snake[0][1] < 64) or (snake[0][0] > WIDTH - 32) or (snake[0][1] > HEIGHT - 32):
+        running = False
+
     tiles_group.draw(screen)
     all_sprites.draw(screen)
     for i, j in snake:
