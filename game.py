@@ -82,6 +82,7 @@ tile_images = {
     'fon_down': load_image('fon_down.png'),
 }
 
+
 tile_width = tile_height = STEP
 
 
@@ -93,6 +94,10 @@ class Tile(pygame.sprite.Sprite):
             tile_width * pos_x, tile_height * pos_y)
 
 
+class Snake(pygame.sprite.Group):
+    def __init
+
+
 pygame.display.set_caption('Змейка')
 running = True
 level_x, level_y = generate_level(load_level('map.txt'))
@@ -101,15 +106,16 @@ level_x, level_y = generate_level(load_level('map.txt'))
 flag = True
 while flag:
     sx = random.randrange(0, WIDTH - STEP, STEP)
-    sy = random.randrange(0, HEIGHT - STEP, STEP)
+    sy = random.randrange(64, HEIGHT - STEP, STEP)
     apple_x = random.randrange(0, WIDTH, STEP)
-    apple_y = random.randrange(0, HEIGHT, STEP)
+    apple_y = random.randrange(64, HEIGHT, STEP)
     if sx != apple_x and sy != apple_y:
         flag = False
 # генерируем положение змейки и яблока
 # также осуществляется проверка на различное положение змейки и яблока.
 
-snake = [(sx,sy), (sx + STEP, sy + STEP)]
+snake = [(sx,sy)]
+snake.append((sx + STEP, sy + STEP))
 snake_len = 2
 x_change = 0
 y_change = 0
@@ -147,7 +153,13 @@ while running:
 
     if snake[-1] == apple_pos:
         all_sprites.remove(apple_sprite)
-        apple_pos = random.randrange(0, WIDTH, STEP), random.randrange(0, HEIGHT, STEP)
+        flag = True
+        while flag:
+            apple_pos = random.randrange(0, WIDTH, STEP), random.randrange(64, HEIGHT, STEP)
+            for i in snake:
+                if i == apple_pos:
+                    break
+            flag = False
         apple_sprite.rect.x, apple_sprite.rect.y = apple_pos
         fortune = random.randint(0, 30)
         if fortune in (5, 13, 17, 23, 28):
@@ -161,10 +173,8 @@ while running:
             snake_len += 1
         all_sprites.add(apple_sprite)
     # поедание змейкой яблока. также добавлено дополнительное(золотое) яблоко, которое выпадает игроку рандомно
-    # if len(snake) != len(set(snake)):
-    #     break
-    if snake[0][0] < 0 or snake[0][1] < 0 or snake[0][0] > WIDTH or snake[0][1] > HEIGHT:
-        break
+    if (snake[0][0] < 0) or (snake[0][1] < 64) or (snake[0][0] > WIDTH - 32) or (snake[0][1] > HEIGHT - 32):
+        running = False
     sx += x_change
     sy += y_change
     snake.append([sx,sy])
@@ -175,6 +185,9 @@ while running:
     for i, j in snake:
         (pygame.draw.rect(screen, pygame.Color('red'), (i, j, STEP, STEP)))
     # прорисовываем карту, яблоки и змейку.
+    text_font = pygame.font.Font('freesansbold.ttf', 64)
+    score_text = text_font.render(str(score), True, (0, 0, 0))
+    screen.blit(score_text, [8, 4])
     pygame.display.flip()
     clock.tick(FPS)
 pygame.quit()
