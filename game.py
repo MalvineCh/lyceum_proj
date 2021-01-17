@@ -5,8 +5,8 @@ import random
 
 
 FPS = 7
-WIDTH = 736
-HEIGHT = 544
+WIDTH = 768
+HEIGHT = 576
 STEP = 32
 
 
@@ -56,12 +56,30 @@ def generate_level(level):
                 Tile('empty', x, y)
             elif level[y][x] == '#':
                 Tile('wall', x, y)
+            elif level[y][x] == 'L':
+                Tile('fon_u_l', x, y)
+            elif level[y][x] == 'R':
+                Tile('fon_u_r', x, y)
+            elif level[y][x] == 'l':
+                Tile('fon_d_l', x, y)
+            elif level[y][x] == 'r':
+                Tile('fon_d_r', x, y)
+            elif level[y][x] == 'u':
+                Tile('fon_up', x, y)
+            elif level[y][x] == 'd':
+                Tile('fon_down', x, y)
     return x, y
 
 
 tile_images = {
     'wall': load_image('wall.png'),
-    'empty': load_image('grass.png')
+    'empty': load_image('grass.png'),
+    'fon_d_l': load_image('fon_d_l_angle.png'),
+    'fon_d_r': load_image('fon_d_r_angle.png'),
+    'fon_u_l': load_image('fon_u_l_angle.png'),
+    'fon_u_r': load_image('fon_u_r_angle.png'),
+    'fon_up': load_image('fon_up.png'),
+    'fon_down': load_image('fon_down.png'),
 }
 
 tile_width = tile_height = STEP
@@ -78,6 +96,8 @@ class Tile(pygame.sprite.Sprite):
 pygame.display.set_caption('Змейка')
 running = True
 level_x, level_y = generate_level(load_level('map.txt'))
+# прогружаем карту
+
 flag = True
 while flag:
     sx = random.randrange(0, WIDTH - STEP, STEP)
@@ -86,21 +106,25 @@ while flag:
     apple_y = random.randrange(0, HEIGHT, STEP)
     if sx != apple_x and sy != apple_y:
         flag = False
+# генерируем положение змейки и яблока
+# также осуществляется проверка на различное положение змейки и яблока.
 
-rand_num = random.randint(0, 30)
-apple_sprite = pygame.sprite.Sprite()
 snake = [(sx,sy), (sx + STEP, sy + STEP)]
 snake_len = 2
 x_change = 0
 y_change = 0
+# задаём положение змейки, её длину
+# также добавляем переменные, которые в дальнейшем помогут определить направление змейки
 
+apple_sprite = pygame.sprite.Sprite()
 apple_sprite.image = load_image('apple.png')
-
 apple_sprite.rect = apple_sprite.image.get_rect()
 apple_pos = (apple_x, apple_y)
-apple_sprite.rect.x = apple_x
-apple_sprite.rect.y = apple_y
+apple_sprite.rect.x, apple_sprite.rect.y = apple_pos
 all_sprites.add(apple_sprite)
+# добавляем спрайт яблока, назначаем его положение, размеры. добавляем в общую группу спрайтов.
+
+score = 0
 
 while running:
     for event in pygame.event.get():
@@ -119,18 +143,38 @@ while running:
             elif event.key == pygame.K_DOWN and y_change != -STEP:
                 x_change = 0
                 y_change = STEP
+    # управление змейкой. также добавляем проверку, чтобы змейка не могла повернуть в противоположное направление
+
     if snake[-1] == apple_pos:
+        all_sprites.remove(apple_sprite)
         apple_pos = random.randrange(0, WIDTH, STEP), random.randrange(0, HEIGHT, STEP)
         apple_sprite.rect.x, apple_sprite.rect.y = apple_pos
-
+        fortune = random.randint(0, 30)
+        if fortune in (5, 13, 17, 23, 28):
+            apple_sprite.image = load_image('gold_apple.png')
+            snake_len += 2
+            FPS += 4
+            score += random.randrange(30, 70, 2)
+        else:
+            apple_sprite.image = load_image('apple.png')
+            score += 4
+            snake_len += 1
+        all_sprites.add(apple_sprite)
+    # поедание змейкой яблока. также добавлено дополнительное(золотое) яблоко, которое выпадает игроку рандомно
+    # if len(snake) != len(set(snake)):
+    #     break
+    if snake[0][0] < 0 or snake[0][1] < 0 or snake[0][0] > WIDTH or snake[0][1] > HEIGHT:
+        break
     sx += x_change
     sy += y_change
     snake.append([sx,sy])
     snake = snake[-snake_len:]
+    # увеличиваем змейку
     tiles_group.draw(screen)
     all_sprites.draw(screen)
     for i, j in snake:
         (pygame.draw.rect(screen, pygame.Color('red'), (i, j, STEP, STEP)))
+    # прорисовываем карту, яблоки и змейку.
     pygame.display.flip()
     clock.tick(FPS)
 pygame.quit()
