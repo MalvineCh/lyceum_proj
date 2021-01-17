@@ -4,7 +4,7 @@ import sys
 import random
 
 
-FPS = 7
+FPS = 5
 WIDTH = 768
 HEIGHT = 576
 STEP = 32
@@ -111,14 +111,14 @@ while flag:
 # также осуществляется проверка на различное положение змейки и яблока.
 
 snake = [(sx,sy)]
-snake.append((sx + STEP, sy))
-snake_len = 2
+snake_len = 1
 x_change = 0
 y_change = 0
 # задаём положение змейки, её длину
 # также добавляем переменные, которые в дальнейшем помогут определить направление змейки
 
 apple_sprite = pygame.sprite.Sprite()
+apple_name = 'apple'
 apple_sprite.image = load_image('apple.png')
 apple_sprite.rect = apple_sprite.image.get_rect()
 apple_pos = (apple_x, apple_y)
@@ -126,12 +126,50 @@ apple_sprite.rect.x, apple_sprite.rect.y = apple_pos
 all_sprites.add(apple_sprite)
 # добавляем спрайт яблока, назначаем его положение, размеры. добавляем в общую группу спрайтов.
 
+pygame.time.set_timer(pygame.USEREVENT, 1000)
+font = pygame.font.Font('freesansbold.ttf', 64)
+text = ''
 score = 0
+counter = 0
+bomb_sprite = pygame.sprite.Sprite()
+bomb_flag = True
+debuff_flag = True
+bang_name = ''
 
 while running:
+    tiles_group.draw(screen)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if event.type == pygame.USEREVENT and not bomb_flag:
+            if debuff_flag:
+                counter -= 1
+                text = str(counter).rjust(2) if counter > 0 else 'бум!'
+                # таймер-отсчет до взрыва бомбы
+                if counter == 0:
+                    bomb_sprite.image = load_image('bang.png')
+                    bx, by = bomb_sprite.rect.x, bomb_sprite.rect.y
+                    square = [(bx + STEP, by + STEP), (bx - STEP, by - STEP),
+                              (bx + STEP, by), (bx - STEP, by), (bx, by + STEP),
+                              (bx, by - STEP), (bx - STEP, by + STEP),
+                              (bx + STEP, by - STEP), (bx, by)]
+                    for i in snake:
+                         if i in square:
+                            counter = 5
+                            FPS += 5
+                            score -= 20
+                            debuff_flag = False
+                            break
+                    all_sprites.remove(bomb_sprite)
+                # взорвавшись, бомба может задеть змейку + змейка получает дебафф
+            else:
+                counter -= 1
+                text = 'Дебафф:' + str(counter).rjust(2)
+                if counter == 0:
+                    counter = False
+                    bomb_flag = True
+                    FPS -= 5
+                # таймер-отсчёт до окончания дебафа
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT and x_change != STEP:
                 x_change = -STEP
@@ -145,8 +183,18 @@ while running:
             elif event.key == pygame.K_DOWN and y_change != -STEP:
                 x_change = 0
                 y_change = STEP
-    # управление змейкой. также добавляем проверку, чтобы змейка не могла повернуть в противоположное направление
+        # управление змейкой. также добавляем проверку, чтобы змейка не могла повернуть в противоположное направление
+        else:
+            score_text = font.render(text, True, (0, 0, 0))
+            screen.blit(score_text, (WIDTH - 4, 8))
+
     if snake[-1] == apple_pos:
+        if apple_name == 'gold':
+            score += random.randrange(30, 70, 2)
+        else:
+            score += 4
+            FPS += 1
+        snake_len += 1
         all_sprites.remove(apple_sprite)
         flag = True
         while flag:
@@ -158,32 +206,52 @@ while running:
         apple_sprite.rect.x, apple_sprite.rect.y = apple_pos
         fortune = random.randint(0, 28)
         if fortune in (1, 5, 9, 13, 17, 23, 28):
+            apple_name = 'gold'
             apple_sprite.image = load_image('gold_apple.png')
-            snake_len += 2
-            FPS += 4
-            score += random.randrange(30, 70, 2)
         else:
+            apple_name = 'apple'
             apple_sprite.image = load_image('apple.png')
-            score += 4
-            snake_len += 1
         all_sprites.add(apple_sprite)
     # поедание змейкой яблока. также добавлено дополнительное(золотое) яблоко, которое выпадает игроку рандомно
+
+    if bomb_flag:
+        rand_num = random.randint(0, 300)
+        if rand_num in (15, 30, 45):
+            bomb_sprite.image = load_image('bomb.png')
+            bang_name = 'bang.png'
+            counter = 5
+            while True:
+                bomb_pos = random.randrange(0, WIDTH, STEP), random.randrange(64, HEIGHT, STEP)
+                flag1 = False
+                if bomb_pos == apple_pos:
+                    flag1 = True
+                else:
+                    for i in snake:
+                        if i == bomb_pos:
+                            flag1 = True
+                            break
+                if not flag1:
+                    break
+            bomb_sprite.rect = bomb_sprite.image.get_rect()
+            bomb_sprite.rect.x, bomb_sprite.rect.y = bomb_pos
+            all_sprites.add(bomb_sprite)
+            bomb_flag = False
+    # создание бомбы
     sx += x_change
     sy += y_change
     snake.append((sx, sy))
     snake = snake[-snake_len:]
     # увеличиваем змейку
 
-    if snake_len != len(set(snake)) and snake_len != 2:
+    if snake.count(snake[0]) :
         running = False
     if (snake[0][0] < 0) or (snake[0][1] < 64) or (snake[0][0] > WIDTH - 32) or (snake[0][1] > HEIGHT - 32):
         running = False
-
-    tiles_group.draw(screen)
+    # условия окончания игры
     all_sprites.draw(screen)
     for i, j in snake:
-        (pygame.draw.rect(screen, pygame.Color('red'), (i, j, STEP, STEP)))
-    # прорисовываем карту, яблоки и змейку.
+        (pygame.draw.rect(screen, pygame.Color('red'), (i, j, STEP -2, STEP -2)))
+    # прорисовываем яблоки и змейку.
     text_font = pygame.font.Font('freesansbold.ttf', 64)
     score_text = text_font.render(str(score), True, (0, 0, 0))
     screen.blit(score_text, [8, 4])
