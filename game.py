@@ -131,6 +131,34 @@ score = 0
 bomb_sprite = pygame.sprite.Sprite()
 bomb_flag = True
 debuff_flag = True
+
+
+def terminate():
+    pygame.quit()
+    sys.exit()
+
+
+def end_screen():
+    fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
+    screen.blit(fon, (0, 0))
+    text = 'ВЫ УМЕРЛИ'
+    font = pygame.font.Font('freesansbold.ttf', 64)
+    score_text = font.render(text, True, (230, 0, 0))
+    screen.blit(score_text, [WIDTH // 8 + 16, HEIGHT // 2 - 64])
+    text = 'score:' + str(score)
+    score_text = font.render(text, True, (230, 0, 0))
+    screen.blit(score_text, [WIDTH // 4 + 32, HEIGHT // 2])
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.KEYDOWN or \
+                    event.type == pygame.MOUSEBUTTONDOWN:
+                terminate()
+        pygame.display.flip()
+        clock.tick(FPS)
+
+
 while running:
     tiles_group.draw(screen)
     for event in pygame.event.get():
@@ -138,7 +166,7 @@ while running:
             running = False
         if event.type == pygame.USEREVENT and not bomb_flag and debuff_flag:
             timer -= 1
-            bomb_time_t = str(timer).rjust(2)
+            text = str(timer).rjust(2)
             # таймер-отсчет до взрыва бомбы
             if timer == 0:
                 bomb_sprite.image = load_image('bang.png')
@@ -160,7 +188,6 @@ while running:
                     bomb_flag = True
                 # взорвавшись, бомба может задеть змейку + змейка получает дебафф
         if event.type == pygame.USEREVENT and not bomb_flag and not debuff_flag:
-                debuff_time_t = 'Дебафф' + str(timer).rjust(2)
                 timer -= 1
                 if timer == 4:
                     all_sprites.remove(bomb_sprite)
@@ -188,8 +215,9 @@ while running:
         if apple_name == 'gold':
             score += random.randrange(30, 70, 2)
         else:
+            if score % 8 == 0:
+                FPS += 1
             score += 4
-            FPS += 1
         snake_len += 1
         all_sprites.remove(apple_sprite)
         flag = True
@@ -240,9 +268,11 @@ while running:
     snake = snake[-snake_len:]
     # увеличиваем змейку
 
-    if snake.count(snake[0]) > 1:
+    if snake_len != len(set(snake)):
+        end_screen()
         running = False
     if (snake[0][0] < 0) or (snake[0][1] < 64) or (snake[0][0] > WIDTH - 32) or (snake[0][1] > HEIGHT - 32):
+        end_screen()
         running = False
     # условия окончания игры
 
@@ -251,18 +281,12 @@ while running:
         (pygame.draw.rect(screen, pygame.Color('red'), (i, j, STEP -2, STEP -2)))
     # прорисовываем яблоки и змейку.
 
-    if not bomb_flag:
-        font = pygame.font.Font('freesansbold.ttf', 64)
-        counter_text = font.render(bomb_time_t, True, (0, 0, 0))
-        screen.blit(counter_text, (WIDTH - 64, 4))
-    if not debuff_flag and not bomb_flag:
-        font = pygame.font.Font('freesansbold.ttf', 32)
-        counter_text = font.render(debuff_time_t, True, (0, 0, 0))
-        screen.blit(counter_text, (WIDTH - 128, 4))
-    else:
-        bomb_time_t = ''
-        debuff_time_t = ''
     font = pygame.font.Font('freesansbold.ttf', 64)
+    if not bomb_flag and debuff_flag:
+        counter_text = font.render(text, True, (0, 0, 0))
+        screen.blit(counter_text, (WIDTH - 64, 4))
+    else:
+        text = ''
     score_text = font.render(str(score), True, (0, 0, 0))
     screen.blit(score_text, [8, 4])
     # отображаем на экране количество очков и таймер
